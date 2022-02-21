@@ -1,3 +1,5 @@
+from os import chdir
+from pathlib import Path
 from sys import argv
 from time import sleep
 
@@ -27,6 +29,9 @@ match len(argv):
                 from selenium.webdriver.safari.service import Service
             case _: exit(print("Unknown browser"))
     case _: exit(print("Invalid argument(s)"))
+
+#   Set `cwd` to project directory for easy accessbility of the `geckodriver.exe`
+chdir(Path(argv[0]).parent)
 
 
 class BotOptions:
