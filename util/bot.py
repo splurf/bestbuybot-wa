@@ -34,6 +34,20 @@ match len(argv):
 chdir(Path(argv[0]).parent)
 
 
+class BotResponse:
+    def __init__(self, res: Response = None):
+        self.res = res
+
+    def ok(self) -> bool:
+        return self.res and self.res.status_code == 200
+
+    def text(self) -> str:
+        return self.res.text
+
+    def url(self) -> str:
+        return self.res.url
+
+
 class BotOptions:
     def __init__(self, browser: str, test: str, rate: float = 0.1, driver_path="geckodriver.exe"):
         if test:
@@ -65,20 +79,18 @@ class BotSession:
             }
         )
 
-    def get(self, path: str = "", headers=None, allow_redirects=True, auto_host=True) -> Response:
+    def get(self, path: str = "", headers=None, allow_redirects=True, auto_host=True) -> BotResponse:
         c = Counter()
 
         url = self.to(path) if auto_host else path
 
         try:
-            return self.inner.get(url=url, headers=headers, allow_redirects=allow_redirects)
+            return BotResponse(self.inner.get(url=url, headers=headers, allow_redirects=allow_redirects))
         except ConnectionError:
             if not c.run():
-                temp = Response()
-                temp.status_code = 403
-                return temp
+                return BotResponse()
         except KeyboardInterrupt:
-            exit()
+            return BotResponse()
 
     @staticmethod
     def to(path: str) -> str:
@@ -140,8 +152,8 @@ class Bot:
     def get_product_url(self) -> bool:
         res = self.session.get("site/searchpage.jsp?st=" + self.product.sku)
 
-        if res.status_code == 200:
-            self.product.url = res.url.split(BotSession.HOST)[1][1::]
+        if res.ok():
+            self.product.url = res.url().split(BotSession.HOST)[1][1::]
             return True
         else:
             return False
@@ -149,28 +161,28 @@ class Bot:
     def update_product(self) -> bool:
         res = self.session.get(self.product.url)
 
-        if res.status_code != 200:
+        if res.ok():
+            soup = Souper.do(res.text())
+
+            self.product.update(Souper.sku(
+                soup), Souper.model(soup), Souper.name(soup))
+
+            return self.product.valid()
+        else:
             return False
-
-        soup = Souper.do(res.text)
-
-        self.product.update(Souper.sku(
-            soup), Souper.model(soup), Souper.name(soup))
-
-        return self.product.valid()
 
     def status(self) -> bool:
         res = self.session.get(self.product.url)
 
-        if res.status_code != 200:
-            self.shutdown("Error: %d" % res.status_code, True)
+        if res.ok():
+            button = Souper.status(Souper.do(res.text()))
 
-        button = Souper.status(Souper.do(res.text))
-
-        if button:
-            return button["data-button-state"] == "ADD_TO_CART"
+            if button:
+                return button["data-button-state"] == "ADD_TO_CART"
+            else:
+                self.shutdown("Error: HTML Parsing Error", True)
         else:
-            self.shutdown("Error: Unknown", True)
+            self.shutdown("Connection Error", True)
 
     def wait_until_in_stock(self):
         self.driver.get(BotSession.to(self.product.url))
