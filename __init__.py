@@ -10,7 +10,6 @@ def main():
     if not bot.update_product():
         return bot.shutdown("Failed to update product")
 
-    #   Print the info of the product
     print("\nSKU: %s\nModel: %s\nName: %s\n" %
           (bot.product.sku, bot.product.model, bot.product.name))
 
