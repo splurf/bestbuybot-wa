@@ -90,13 +90,14 @@ class BotSession:
     def get(self, path: str) -> BotResponse:
         c = Counter()
 
-        try:
-            return BotResponse(self.inner.get(self.to(path)))
-        except KeyboardInterrupt:
-            return BotResponse(interrupt=True)
-        except ConnectionError:
-            if not c.run():
-                return BotResponse()
+        while c.running():
+            try:
+                return BotResponse(self.inner.get(self.to(path)))
+            except KeyboardInterrupt:
+                return BotResponse(interrupt=True)
+            except ConnectionError:
+                c.cycle()
+        return BotResponse()
 
     @staticmethod
     def to(path: str) -> str:
@@ -139,7 +140,8 @@ class Bot:
 
     def info(self) -> str:
 
-        s = "SKU: %s\nModel: %s\nName: %s" % (self.product.sku, self.product.model, self.product.name)
+        s = "SKU: %s\nModel: %s\nName: %s" % (
+            self.product.sku, self.product.model, self.product.name)
         if self.test():
             s = "[Test]\n\n" + s
 
@@ -231,10 +233,10 @@ class Bot:
             if self.status():
                 Counter.rprint("IN STOCK")
                 break
-            elif c.old():
+            elif not c.running():
                 self.update_product()
             else:
-                c.run()
+                c.cycle()
             sleep(self.options.rate)
 
         self.session.inner.close()

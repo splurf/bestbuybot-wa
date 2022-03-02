@@ -5,7 +5,7 @@ class Counter:
         self.t = 0
         self.v = 0
 
-    def run(self) -> bool:
+    def cycle(self) -> bool:
         if self.content != None:
             Counter.rprint(self.content + "." * self.v)
 
@@ -17,12 +17,12 @@ class Counter:
             self.v += 1
             return True
 
-    def old(self) -> bool:
+    def running(self) -> bool:
         if self.t == self.age:
             self.t = 0
-            return True
-        else:
             return False
+        else:
+            return True
 
     @staticmethod
     def rprint(content: str):
