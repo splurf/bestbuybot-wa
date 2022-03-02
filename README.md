@@ -19,12 +19,12 @@ You must have a valid Best Buy account with the payment and delivery forms alrea
 
 The format for calling this script via command line:\
 ```cmd
-python <PATH_TO_INIT> <BROWSER> <SKU> <EMAIL> <PASSWORD> <CVV> [Optional]<TEST>
+python <PATH_TO_INIT> <SKU> <EMAIL> <PASSWORD> <CVV> <BROWSER> [Optional]<TEST>
 ```
 
 Here's an example of a test run:
 ```cmd
-python ./__init__.py firefox 6429442 johndoe@gmail.com abigai1822 420 test
+python ./__init__.py 6429442 johndoe@gmail.com abigai1822 420 firefox test
 ```
 
 ##  Notes
