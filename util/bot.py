@@ -17,7 +17,7 @@ from util.product import Product
 
 match len(argv):
     case 6 | 7:
-        match argv[1]:
+        match argv[5]:
             case "chrome":
                 from selenium.webdriver import Chrome as Browser
                 from selenium.webdriver.chrome.service import Service
@@ -40,7 +40,7 @@ class BotResponse:
         self.interrupt = interrupt
 
     def is_ok(self) -> bool:
-        return self.res and self.res.status_code == 200
+        return not self.interrupt and self.res and self.res.status_code == 200
 
     def is_interrupt(self) -> bool:
         return self.interrupt
@@ -50,18 +50,25 @@ class BotResponse:
 
 
 class BotOptions:
-    def __init__(self, browser: str, test: str, rate: float = 0.1, driver_path="geckodriver.exe"):
-        if test:
-            if test == "test":
-                self.test = True
-            else:
-                self.shutdown("Invalid test parameter")
-        else:
-            self.test = False
-
+    def __init__(self, browser: str, test: bool, rate: float = 0.1, driver_path="geckodriver.exe"):
         self.browser = browser
+        self.test = test
         self.rate = rate
         self.driver_path = driver_path
+
+    @staticmethod
+    def new(browser: str, test: str, rate: float = 0.1):
+        is_test: bool
+
+        if test:
+            if test == "test":
+                is_test = True
+            else:
+                return None
+        else:
+            is_test = False
+
+        return BotOptions(browser, test, rate)
 
 
 class BotSession:
@@ -85,11 +92,11 @@ class BotSession:
 
         try:
             return BotResponse(self.inner.get(self.to(path)))
+        except KeyboardInterrupt:
+            return BotResponse(interrupt=True)
         except ConnectionError:
             if not c.run():
                 return BotResponse()
-        except KeyboardInterrupt:
-            return BotResponse(interrupt=True)
 
     @staticmethod
     def to(path: str) -> str:
@@ -120,8 +127,8 @@ class BotWebElement:
 
 
 class Bot:
-    def __init__(self, browser: str, sku: str, email: str, password: str, cvv: str, test: str = None):
-        self.options = BotOptions(browser, test=test)
+    def __init__(self, options: BotOptions, sku: str, email: str, password: str, cvv: str):
+        self.options = options
         self.driver = Browser(service=Service(self.options.driver_path))
         self.account = Account(email, password, cvv)
         self.session = BotSession()
@@ -130,16 +137,16 @@ class Bot:
     def test(self) -> bool:
         return self.options.test
 
-    def shutdown(self, msg: str = None, exit=False, block=True):
+    def shutdown(self, msg: str = None, quit=False, block=True):
         self.session.inner.close()
         self.driver.close()
 
         if msg:
             Counter.rprint(msg)
-        if exit:
-            exit(1)
         if block:
-            input()
+            input("\n\nPress ENTER to exit...")
+        if quit:
+            exit(1)
 
     def get(self, path: str) -> Response | None:
         res = self.session.get(path)
@@ -308,4 +315,9 @@ class Bot:
 
     @staticmethod
     def from_args():
-        return Bot(*argv[1::])
+        options = BotOptions.new(*argv[5:])
+
+        if options:
+            return Bot(options, *argv[1:5])
+        else:
+            return None

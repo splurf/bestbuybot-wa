@@ -4,6 +4,9 @@ from util.bot import Bot
 def main():
     bot = Bot.from_args()
 
+    if not bot:
+        return print("Invalid arguments")
+
     if not bot.get_product_url():
         return bot.shutdown("Invalid SKU")
 
@@ -35,14 +38,15 @@ def main():
         input("Test Run Successfully Completed")
         bot.shutdown(block=False)
     else:
+        msg: str
         if bot.place_order("Placing order"):
             if bot.evaluate():
-                input("Successfully Purchased")
+                msg = "Successfully Purchased"
             else:
-                input("Failed to Purchase")
-            bot.shutdown(block=False)
+                msg = "Failed to Purchase"
         else:
-            bot.shutdown("Failed to place order")
+            msg = "Failed to place order"
+        bot.shutdown(msg)
 
 
 if __name__ == "__main__":
