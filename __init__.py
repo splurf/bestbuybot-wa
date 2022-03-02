@@ -13,8 +13,7 @@ def main():
     if not bot.update_product():
         return bot.shutdown("Failed to update product")
 
-    print("\nSKU: %s\nModel: %s\nName: %s\n" %
-          (bot.product.sku, bot.product.model, bot.product.name))
+    print(bot.info())
 
     if not bot.login("Logging in"):
         return bot.shutdown("Failed to login")

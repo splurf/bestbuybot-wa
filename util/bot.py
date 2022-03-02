@@ -57,7 +57,7 @@ class BotOptions:
         self.driver_path = driver_path
 
     @staticmethod
-    def new(browser: str, test: str, rate: float = 0.1):
+    def new(browser: str, test: str = "", rate: float = 0.1):
         is_test: bool
 
         if test:
@@ -136,6 +136,14 @@ class Bot:
 
     def test(self) -> bool:
         return self.options.test
+
+    def info(self) -> str:
+
+        s = "SKU: %s\nModel: %s\nName: %s" % (self.product.sku, self.product.model, self.product.name)
+        if self.test():
+            s = "[Test]\n\n" + s
+
+        return s + "\n"
 
     def shutdown(self, msg: str = None, quit=False, block=True):
         self.session.inner.close()
